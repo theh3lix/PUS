@@ -8,5 +8,5 @@ Respository containing laboratory exercices for Network Services Programming sub
 
 # Contributors:
 
-Witold Karaś
+Witold Karaś\n
 Łukasz Maj 
