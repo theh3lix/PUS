@@ -92,12 +92,13 @@ void fill_struct()
 
 int interface_number()
 {
-	if (if_nametoindex(interf) == 0)
+	int _int = if_nametoindex(interf);
+	if (_int == 0)
     {
 		printf("CLIENT: Name to index error\n");
 		perror("");
 		exit(EXIT_FAILURE);
 	}
 	
-	return if_nametoindex(interf);
+	return _int;
 }
