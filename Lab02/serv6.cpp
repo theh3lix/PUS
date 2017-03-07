@@ -1,77 +1,113 @@
-
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/socket.h> /* socket() */
-#include <netinet/in.h> /* struct sockaddr_in */
-#include <arpa/inet.h>  /* inet_ntop() */
-#include <unistd.h>     /* close() */
+#include <sys/socket.h> 
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <unistd.h> 
 #include <string.h>
 #include <errno.h>
 
-int main(int argc, char** argv) {
+#include <iostream>
 
-    int             sockfd; /* Deskryptor gniazda. */
-    int             retval; /* Wartosc zwracana przez funkcje. */
-    int new_socket;
-    struct          sockaddr_in6 client_addr, server_addr;     /* Gniazdowe struktury adresowe (dla klienta i serwera): */
-    socklen_t       client_addr_len, server_addr_len;     /* Rozmiar struktur w bajtach: */
+using namespace std;
 
-    /* Bufor wykorzystywany przez recvfrom() i sendto(): */
-    char*           wiadomosc = "Laboratorium PUS02";
-    char            adresIPv6[INET6_ADDRSTRLEN];
-
-    if (argc != 2) {
-        fprintf(stderr, "Invocation: %s <PORT>\n", argv[0]);
+int main(int argc, char* argv[])
+{
+	if(argc!=3)
+	{
+		cerr<<"Wrong arguments number!"<<endl;
+		cerr<<"Propper invocation: \n./serv6 port_number "<<endl;
         exit(EXIT_FAILURE);
+	}
+	
+	cerr<<"IPv6 Server - PUS Lab02-3"<<endl;
+	cerr<<"Witold Karaś, Łukasz Maj"<<endl;
+	cerr<<"Port number:"<<argv[2]<<endl;
+	
+	
+	int portNumber=atoi(argv[2]);
+	
+	sockaddr_in6 serverSocketAddress;
+	
+	
+	//creating new socket
+	//AF_INET6 - communications domain = IPv6
+	//SOCK_STREAM - socket type = TCP
+	//IPPROTO_TCP - TCP (see netinet/in.h)
+	int socketDescriptor=socket(AF_INET6, SOCK_STREAM, IPPROTO_TCP); 
+
+	if(socketDescriptor==-1)
+	{
+		cerr<<"Socket creation error!"<<endl;
+		cerr<<"errno: "<<errno;
+		exit(EXIT_FAILURE);
+	}
+	
+	
+	//preparing serverSocketAddress structure
+	memset(&serverSocketAddress, 0, sizeof(serverSocketAddress));
+	//serverSocketAddress.sin6_len=sizeof(server_addr);
+    serverSocketAddress.sin6_family=AF_INET6;     
+    serverSocketAddress.sin6_port=htons(portNumber);
+    serverSocketAddress.sin6_addr=in6addr_any;
+    
+    if (bind(socketDescriptor, (struct sockaddr*) &serverSocketAddress, sizeof(serverSocketAddress)) ==-1)
+    {
+		cerr<<"Socket binding error!"<<endl;
+		cerr<<"errno: "<<errno;
+		exit(EXIT_FAILURE);
     }
+    
+	const int queueLength=20;
+	
+	//mark socket passive (prepare for receive)
+	if(listen(socketDescriptor, queueLength)==-1)
+	{
+		cerr<<"Socket listen error!"<<endl;
+		cerr<<"errno: "<<errno;
+		exit(EXIT_FAILURE);
+	}
 
-    sockfd = socket(AF_INET6, SOCK_STREAM, IPPROTO_TCP);
-    if (sockfd == -1) {
-        perror("socket()");
-        exit(EXIT_FAILURE);
-    }
+	while(true)
+	{
+		int clientSocketDescriptor;
+		sockaddr_in6 clientSocketAddress;
+		socklen_t clientSocketAddressLength = sizeof(clientSocketAddress);
 
-    memset(&server_addr, 0, sizeof(server_addr));     /* Wyzerowanie struktury adresowej serwera: */
-    server_addr.sin6_family          =       AF_INET6;     /* Domena komunikacyjna (rodzina protokolow): */
-    server_addr.sin6_port            =       htons(atoi(argv[1]));     /* Numer portu: */
-    server_addr.sin6_addr            =       in6addr_any;    /* Adres nieokreslony (ang. wildcard address): */
-    server_addr_len                  =       sizeof(server_addr);     /* Rozmiar struktury adresowej serwera w bajtach: */
+		if(clientSocketDescriptor=accept(socketDescriptor, (sockaddr *)&clientSocketAddress, &clientSocketAddressLength )==-1)
+		{
+			cerr<<"Socket accept error!"<<endl;
+			cerr<<"errno: "<<errno;
+			exit(EXIT_FAILURE);
+		}
+		else
+		{
+			char* ipAddressCString;
+			inet_ntop(AF_INET6, &clientSocketAddress.sin6_addr, ipAddressCString, INET6_ADDRSTRLEN );
+			cerr<<"Client IP address: "<<ipAddressCString<<" Port number: "<< ntohs(clientSocketAddress.sin6_port)<<endl;
 
-    /* Powiazanie "nazwy" (adresu IP i numeru portu) z gniazdem: */
-    retval = bind(sockfd, (struct sockaddr*) &server_addr, server_addr_len);
-    if ( retval == -1) {
-        perror("bind()");
-        exit(EXIT_FAILURE);
-    }
 
-    fprintf(stdout, "Server is listening for incoming connection...\n");
-    client_addr_len = sizeof(client_addr);
-
-    /* Oczekiwanie na dane od klienta: */
-    if (listen(sockfd, SOMAXCONN) == -1) { //SOMAXCONN ~128
-        perror("listen()");
-        exit(EXIT_FAILURE);
-    }
-
-    while(1){
-
-        if ((new_socket = accept(sockfd, (struct sockaddr *)&client_addr, (socklen_t*)&client_addr_len)) < 0){
-				perror("accept");
-				exit(EXIT_FAILURE);
-			}else{
-			    if(!IN6_IS_ADDR_V4MAPPED(&client_addr.sin6_addr))
-                    printf("Client is v6\n");
-                  else
-                    printf("Client is v4\n");
-			    inet_ntop(AF_INET6, &client_addr.sin6_addr, adresIPv6, INET6_ADDRSTRLEN );
-                printf("---ADRES: %s \n---PORT: %d \n *****\n",adresIPv6, ntohs(client_addr.sin6_port));
-                fflush(stdout);
-
-                send( new_socket, wiadomosc, strlen(wiadomosc), 0);
+			if(IN6_IS_ADDR_V4MAPPED(&clientSocketAddress))
+			{
+				cout<<"Client: IP ver. 4"<<endl;
 			}
-        close(new_socket);
-    }
+			else
+			{
+				cout<<"Client: IP ver. 6"<<endl;
+			}
+			cout<<flush;
 
-    exit(EXIT_SUCCESS);
+			char* mess= (char *) "Laboratorium PUS";
+			if(write(clientSocketDescriptor, mess, strlen(mess))<=0)
+            {
+                cerr<<"Socket write error!"<<endl;
+                cerr<<"errno: "<<errno;
+                exit(EXIT_FAILURE);
+            }
+			close(clientSocketDescriptor);
+		}
+	}
 }
+
+
 
