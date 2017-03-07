@@ -1,3 +1,5 @@
+//author: Witold Karaś
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/socket.h> 
