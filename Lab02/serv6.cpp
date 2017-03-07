@@ -13,7 +13,7 @@ using namespace std;
 
 int main(int argc, char* argv[])
 {
-	if(argc!=3)
+	if(argc!=2)
 	{
 		cerr<<"Wrong arguments number!"<<endl;
 		cerr<<"Propper invocation: \n./serv6 port_number "<<endl;
@@ -22,10 +22,10 @@ int main(int argc, char* argv[])
 	
 	cerr<<"IPv6 Server - PUS Lab02-3"<<endl;
 	cerr<<"Witold Karaś, Łukasz Maj"<<endl;
-	cerr<<"Port number:"<<argv[2]<<endl;
+	cerr<<"Port number:"<<argv[1]<<endl;
 	
 	
-	int portNumber=atoi(argv[2]);
+	int portNumber=atoi(argv[1]);
 	
 	sockaddr_in6 serverSocketAddress;
 	
@@ -46,7 +46,6 @@ int main(int argc, char* argv[])
 	
 	//preparing serverSocketAddress structure
 	memset(&serverSocketAddress, 0, sizeof(serverSocketAddress));
-	//serverSocketAddress.sin6_len=sizeof(server_addr);
     serverSocketAddress.sin6_family=AF_INET6;     
     serverSocketAddress.sin6_port=htons(portNumber);
     serverSocketAddress.sin6_addr=in6addr_any;
