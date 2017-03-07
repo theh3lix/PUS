@@ -87,7 +87,7 @@ int main(int argc, char* argv[])
 			cerr<<"Client IP address: "<<ipAddressCString<<" Port number: "<< ntohs(clientSocketAddress.sin6_port)<<endl;
 
 
-			if(IN6_IS_ADDR_V4MAPPED(&clientSocketAddress))
+			if(IN6_IS_ADDR_V4MAPPED(&clientSocketAddress.sin6_addr))
 			{
 				cout<<"Client: IP ver. 4"<<endl;
 			}
