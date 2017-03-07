@@ -63,7 +63,7 @@ void msg_recieve()
 
 void server_connect()
 {
-	if (connect(socket_server, (const struct sockaddr*) &server_ip, sizeof(server_ip)) == -1) 
+	if (connect(socket_server, (struct sockaddr*) &server_ip, sizeof(server_ip)) == -1) 
     {
 		printf("CLIENT: Connect error\n");
         perror("");
