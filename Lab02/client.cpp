@@ -28,7 +28,7 @@ int main(int argc, char* argv[])
 
 
     addrinfo hints;
-    addrinfo *serverSocketAddressArray;
+    addrinfo *serverSocketAddressList;
 
     //AF_UNSPEC - any communications domain = IPv4 or IPv6
     //SOCK_STREAM - socket type = TCP
@@ -39,7 +39,7 @@ int main(int argc, char* argv[])
     hints.ai_protocol = IPPROTO_TCP;
 
 
-    if(getaddrinfo(argv[1], argv[2], &hints, &serverSocketAddressArray)!=0)
+    if(getaddrinfo(argv[1], argv[2], &hints, &serverSocketAddressList)!=0)
     {
         cerr<<"Socket creation error!"<<endl;
         cerr<<"errno: "<<errno;
@@ -47,7 +47,7 @@ int main(int argc, char* argv[])
     }
 
 
-    switch(serverSocketAddressArray->ai_family)
+    switch(serverSocketAddressList->ai_family)
     {
         case AF_INET:
             cout<<"IPv4 socket family"<<endl;
@@ -62,17 +62,12 @@ int main(int argc, char* argv[])
     }
 
     //creating socket corresponding to server IP version and other options
-    int socketDescriptor=socket(serverSocketAddressArray->ai_family,
-                            serverSocketAddressArray->ai_socktype,
-                            serverSocketAddressArray->ai_protocol);
+    int socketDescriptor=socket(serverSocketAddressList->ai_family,
+                            serverSocketAddressList->ai_socktype,
+                            serverSocketAddressList->ai_protocol);
 
-
-    sockaddr_storage serverSocketAddressStorage;
-    serverSocketAddressStorage.ss_family=serverSocketAddressArray->ai_family;
-    socklen_t serverSocketAddressStorageLength=sizeof(serverSocketAddressStorage);
-
-
-    if(connect(socketDescriptor, serverSocketAddressArray->ai_addr, serverSocketAddressArray->ai_addrlen)==-1)
+    
+    if(connect(socketDescriptor, serverSocketAddressList->ai_addr, serverSocketAddressList->ai_addrlen)==-1)
     {
         cerr<<"Socket connect error!"<<endl;
         perror("");
@@ -83,6 +78,10 @@ int main(int argc, char* argv[])
     {
         char IPAddress[NI_MAXHOST];
         char portNumber[NI_MAXSERV];
+
+        sockaddr_storage serverSocketAddressStorage;
+        serverSocketAddressStorage.ss_family=serverSocketAddressList->ai_family;
+        socklen_t serverSocketAddressStorageLength=sizeof(serverSocketAddressStorage);
 
         getsockname(socketDescriptor, (struct sockaddr*)&serverSocketAddressStorage, &serverSocketAddressStorageLength);
         getnameinfo((struct sockaddr*)&serverSocketAddressStorage,
