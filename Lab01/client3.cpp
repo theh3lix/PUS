@@ -77,7 +77,7 @@ int main(int argc, char** argv) {
 	{
 		cout<<"Enter message to send"<<endl;
 		
-		char* message;
+		char message[256];
 		cin>>message;
 				
 		if(message==nullptr)

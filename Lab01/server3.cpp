@@ -96,10 +96,7 @@ int main(int argc, char** argv) {
 		
 
 		
-		fprintf(stdout, "UDP datagram received from %s:%d. Echoing message...\n",
-				inet_ntop(AF_INET, &client_addr.sin_addr, addr_buff, sizeof(addr_buff)),
-				ntohs(client_addr.sin_port)
-			   );
+		fprintf(stdout, "UDP datagram received from %s:%d. Echoing message...\n", inet_ntop(AF_INET, &client_addr.sin_addr, addr_buff, sizeof(addr_buff)), ntohs(client_addr.sin_port));
 			
 		//czy na pewno wysylany jest \0 ?
 		
@@ -124,7 +121,7 @@ int main(int argc, char** argv) {
 
 
 		//sending response back to client
-		if(sendto(sockfd,buff, retval,0,(struct sockaddr*)&client_addr, client_addr_len)==-1);
+		if(sendto(sockfd,buff,retval,0,(struct sockaddr*)&client_addr, client_addr_len)==-1);
 		{
 			cout<<"Error sending message back";
 			close(sockfd);
