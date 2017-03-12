@@ -12,7 +12,7 @@
 #pragma GCC diagnostic ignored "-Wwrite-strings"
 
 #define MAX_CLIENT_MESSAGE 2000
-#define MAX_BUFFOR_SIZE 1000
+#define MAX_BUFFOR_SIZE 240
 
 void* connection_handler(void* socket_descriptor)
 {
@@ -29,6 +29,14 @@ void* connection_handler(void* socket_descriptor)
     // Reading images
     if ((dir = opendir("/home/qhoros/CLionProjects/server5/img/")) != NULL)
     {
+        // HTTP Header
+        //strcpy(buff_send, "HTTP/1.1 240 Ok\r\n");
+        //strcat(buff_send, "Content-length:");
+        //strcat(buff_send, "240");
+        //strcat(buff_send, "\r\n");
+
+        // Proper message
+        memset(buff_send, 0, sizeof(buff_send));
         strcpy(buff_send, "<HTML>\n\t<BODY>\n\t\t<CENTER>\n");
 
         while((ent = readdir(dir)) != NULL)
@@ -66,18 +74,7 @@ void* connection_handler(void* socket_descriptor)
     //Receive a message from client
     read_size = recv(sock, client_message, MAX_CLIENT_MESSAGE, 0);
 
-    if(read_size == 0)
-    {
-        printf("SERVER: Client disconnected");
-        fflush(stdout);
-    }
-    else if(read_size == -1)
-    {
-        printf("SERVER: Recv failed\n\terrno: %d\n", errno);
-        perror("");
-        exit(EXIT_FAILURE);
-    }
-
+    memset(buff_send, 0, sizeof(buff_send));
     free(socket_descriptor);
     return 0;
 }
@@ -140,13 +137,9 @@ int main(int argc, char** argv)
 
         printf("SERVER: Connection accepted\n");
 
-        // Reply to the client
-        //message = "Hello client...\n";
-        //write(new_socket, message, strlen(message));
-
         // Creating clinet thread
         pthread_t new_thread;
-        new_sock = (int*)malloc(1);
+        new_sock = (int*)malloc(sizeof(int));
         *new_sock= new_socket;
 
         if (pthread_create(&new_thread, NULL, connection_handler, (void*)new_sock) < 0)
@@ -156,8 +149,7 @@ int main(int argc, char** argv)
             exit(EXIT_FAILURE);
         }
 
-        pthread_join(new_thread, NULL);
-        printf("SERVER: Thread handler assigned\n");
+        //pthread_join(new_thread, NULL);
     }
 
     close(socket_descriptor);
