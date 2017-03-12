@@ -14,10 +14,14 @@
 #include <string.h>
 #include <errno.h>
 
+#include "libpalindrome.h"
 
 #include <iostream>
 #include <cstdlib>
-#include "libpalindrome.h"
+
+
+
+using namespace std;
 
 int main(int argc, char** argv) {
 
@@ -113,9 +117,9 @@ int main(int argc, char** argv) {
 				exit(EXIT_FAILURE);
 			}
 			i++;
-		} while(currentChar!='\0')
+		} while(currentChar!='\0');
 		
-		libpalindrome(buff, strlen(buff));
+		is_palindrome(buff, strlen(buff));
 		
 
 

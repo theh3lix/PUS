@@ -18,6 +18,8 @@
 #include <iostream>
 #include <cstdlib>
 
+using namespace std;
+
 int main(int argc, char** argv) {
 
     int             sockfd;                 /* Desktryptor gniazda. */
@@ -63,7 +65,7 @@ int main(int argc, char** argv) {
 
 
 		
-	if(connect(sockfd, remote_addr, addr_len)==-1)
+	if(connect(sockfd, (sockaddr*)&remote_addr, addr_len)==-1)
     {
         cerr<<"Socket connect error!"<<endl;
         perror("");
@@ -75,7 +77,7 @@ int main(int argc, char** argv) {
 	{
 		cout<<"Enter message to send"<<endl;
 		
-		char* message=nullptr;
+		char* message;
 		cin>>message;
 				
 		if(message==nullptr)
@@ -83,7 +85,7 @@ int main(int argc, char** argv) {
 			break;
 		}
 		
-		if(send(sockfd, message, strlen(message))==-1)
+		if(send(sockfd, message, strlen(message), 0)==-1)
 		{
 			cerr<<"Socket send error!"<<endl;
 			//perror("");
@@ -110,3 +112,4 @@ int main(int argc, char** argv) {
 	cout<<"No message provided. Shutting down...";
     exit(EXIT_SUCCESS);
 }
+
