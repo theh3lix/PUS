@@ -102,9 +102,9 @@ int main(int argc, char** argv) {
 			exit(EXIT_FAILURE);
 		}
 
-		buff[retval] = '\0';
-		
-		cout<<"Response from server: "<<message<<endl;
+		//buff[retval] = '\0';
+
+		cout<<"Response from server: "<<buff<<endl;
 	}
 	
 

@@ -14,10 +14,9 @@
 #include <string.h>
 #include <errno.h>
 
-#include "libpalindrome.h"
+#include "libpalindrome.c"
 
 #include <iostream>
-#include <cstdlib>
 
 
 
@@ -36,6 +35,7 @@ int main(int argc, char** argv) {
 
     /* Bufor wykorzystywany przez recvfrom() i sendto(): */
     char            buff[256];
+    memset(&buff, 0, sizeof(buff));
 
     /* Bufor dla adresu IP klienta w postaci kropkowo-dziesietnej: */
     char            addr_buff[256];
@@ -115,24 +115,37 @@ int main(int argc, char** argv) {
 			}
 			i++;
 		} while(currentChar!='\0');
-		
-		is_palindrome(buff, strlen(buff));
-		
 
 
+        char retVal;
+        switch(is_palindrome(buff, strlen(buff)))
+        {
+            case 1:
+                retVal='t';
+                break;
+            case 0:
+                retVal='n';
+                break;
+            default:
+                retVal='x';
+                break;
+        }
+		
+
+        //uwagi: blad w kodzie pliku server2.c
 		//sending response back to client
-		if(sendto(sockfd,buff,retval,0,(struct sockaddr*)&client_addr, client_addr_len)==-1);
+        //wtf? - zwracane -1 a errno jest 0
+		if(sendto(sockfd,&retVal,sizeof(retVal),0,(struct sockaddr*)&client_addr, client_addr_len)==-1);
 		{
-			cout<<"Error sending message back";
+			cerr<<"Error sending message back. errno: "<<errno<<endl;
+            perror("");
 			close(sockfd);
 			exit(EXIT_FAILURE);
 		}		
 	}
 	
 	
-	
-    
-	
+
     close(sockfd);
 	cout<<"No message provided. Shutting down...";
     exit(EXIT_SUCCESS);
