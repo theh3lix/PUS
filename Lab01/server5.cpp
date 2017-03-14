@@ -74,8 +74,7 @@ void* connection_handler(void* socket_descriptor)
                 {
                     if (!strcmp(ent->d_name, ".") || !strcmp(ent->d_name, ".."))
                         continue;
-                    else if (strstr(ent->d_name, p) != NULL || strstr(ent->d_name, ".png") != NULL ||
-                             strstr(ent->d_name, ".jpg") != NULL || strstr(ent->d_name, ".jpeg") != NULL)
+                    else if (strstr(ent->d_name, p) != NULL)
                     {
                         strcat(buff_send, "<IMG SRC='");
                         strcat(buff_send, ent->d_name);
@@ -117,7 +116,8 @@ void* connection_handler(void* socket_descriptor)
                 {
                     if (!strcmp(ent->d_name, ".") || !strcmp(ent->d_name, ".."))
                         continue;
-                    else if (strstr(ent->d_name, p) != NULL)
+                    else if (strstr(ent->d_name, ".png") != NULL ||
+                             strstr(ent->d_name, ".jpg") != NULL || strstr(ent->d_name, ".jpeg") != NULL)
                     {
                         strcat(buff_send, "<IMG SRC='");
                         strcat(buff_send, ent->d_name);
