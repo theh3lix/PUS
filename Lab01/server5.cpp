@@ -12,59 +12,134 @@
 #pragma GCC diagnostic ignored "-Wwrite-strings"
 
 #define MAX_CLIENT_MESSAGE 2000
-#define MAX_BUFFOR_SIZE 512
+#define MAX_BUFFOR_SIZE 2048
 
 
 void* connection_handler(void* socket_descriptor)
 {
     // Get the socket descriptor
     int sock = *(int*)socket_descriptor;
-    char* client_message[MAX_CLIENT_MESSAGE];
+    char client_message[MAX_CLIENT_MESSAGE];
     DIR* dir;
     struct dirent* ent;
     char buff_send[MAX_BUFFOR_SIZE];
     int read_size;
+    char method[256], protocol[256], url[256];
 
-    printf("SERVER: Thread function\n");
-
-    // Reading images
-    if ((dir = opendir("img/")) != NULL)
+    if((read_size = recv(sock, client_message, sizeof(client_message), 0)) == -1)
     {
-        // Header
-        char* blank_response_header =
-                "HTTP/1.0 200 OK\n"
-                        "Content-Type: text/html;charset=UTF-8\n"
-                        "Content-Length:512\n"
-                        "Content-Encoding: UTF-8\n"
-                        "\n";
-
-        // Proper message
-        memset(buff_send, 0, sizeof(buff_send));
-        strcpy(buff_send, blank_response_header);
-        strcat(buff_send, "<HTML>\n\t<BODY>\n\t\t<CENTER>\n");
-
-        while((ent = readdir(dir)) != NULL)
-        {
-            if (!strcmp(ent->d_name, ".") || !strcmp(ent->d_name, ".."))
-                continue;
-            else if (strstr(ent->d_name, ".gif") != NULL || strstr(ent->d_name, ".png") != NULL || strstr(ent->d_name, ".jpg") != NULL || strstr(ent->d_name, ".jpeg") != NULL)
-            {
-                strcat(buff_send, "\t\t\t<IMG SRC='");
-                strcat(buff_send, ent->d_name);
-                strcat(buff_send, "'/></IMG><BR />\n");
-            }
-            else
-                continue;
-        }
-        strcat(buff_send, "\t\t</CENTER>\n\t</BODY>\n</HTML>\n");
-
-        closedir(dir);
-    }
-    else
-    {
-        printf("SERVER: Could not open 'img' directory\n\terrno: %d\n", errno);
+        printf("SERVER: Recv error\n\terrno: %d\n", errno);
         perror("");
         exit(EXIT_FAILURE);
+    }
+    else if(read_size == 0)
+    {
+        printf("SERVER: Does not receive any packet...\n");
+        exit(EXIT_FAILURE);
+    }
+
+    client_message[read_size]='\0';
+    sscanf(client_message, "%s %s %s", method, url, protocol);
+    method[strlen(method)] = '\0';
+    url[strlen(url)] = '\0';
+    protocol[strlen(protocol)] = '\0';
+
+    if(strcmp(protocol, "HTTP/1.1") == 0)
+    {
+        char *p=(char*)malloc(strlen(url) - 1);
+        memset(p, 0, strlen(p));
+
+        for(int i = 1; i < strlen(url); i++)
+            *(p+i-1) = url[i];
+        *(p+strlen(url) - 1) = '\0';
+
+        if(strchr(p,'/') == NULL)
+        {
+            // Reading image
+            if ((dir = opendir("img/")) != NULL)
+            {
+                // Header
+                char *blank_response_header =
+                        "HTTP/1.0 200 OK\n"
+                                "Content-Type: text/html;charset=UTF-8\n"
+                                "Content-Length:2048\n"
+                                "Content-Encoding: UTF-8\n"
+                                "\n";
+
+                // Proper message
+                memset(buff_send, 0, sizeof(buff_send));
+                strcpy(buff_send, blank_response_header);
+                strcat(buff_send, "<HTML><BODY><CENTER>");
+
+                while ((ent = readdir(dir)) != NULL)
+                {
+                    if (!strcmp(ent->d_name, ".") || !strcmp(ent->d_name, ".."))
+                        continue;
+                    else if (strstr(ent->d_name, p) != NULL || strstr(ent->d_name, ".png") != NULL ||
+                             strstr(ent->d_name, ".jpg") != NULL || strstr(ent->d_name, ".jpeg") != NULL)
+                    {
+                        strcat(buff_send, "<IMG SRC='");
+                        strcat(buff_send, ent->d_name);
+                        strcat(buff_send, "'/></IMG><BR />");
+                    }
+                    else
+                        continue;
+                }
+                strcat(buff_send, "</CENTER></BODY></HTML>");
+                buff_send[strlen(buff_send)] = '\0';
+
+                closedir(dir);
+            }
+            else
+            {
+                printf("SERVER: Could not open 'img' directory\n\terrno: %d\n", errno);
+                perror("");
+                exit(EXIT_FAILURE);
+            }
+        }
+        else
+        {
+            // Reading images
+            if ((dir = opendir("img/")) != NULL)
+            {
+                // Header
+                char *blank_response_header =
+                        "HTTP/1.0 200 OK\n"
+                                "Content-Type: text/html;charset=UTF-8\n"
+                                "Content-Length:2048\n"
+                                "Content-Encoding: UTF-8\n"
+                                "\n";
+
+                // Proper message
+                memset(buff_send, 0, sizeof(buff_send));
+                strcpy(buff_send, blank_response_header);
+                strcat(buff_send, "<HTML><BODY><CENTER>");
+
+                while ((ent = readdir(dir)) != NULL)
+                {
+                    if (!strcmp(ent->d_name, ".") || !strcmp(ent->d_name, ".."))
+                        continue;
+                    else if (strstr(ent->d_name, p) != NULL)
+                    {
+                        strcat(buff_send, "<IMG SRC='");
+                        strcat(buff_send, ent->d_name);
+                        strcat(buff_send, "'/></IMG><BR />");
+                    }
+                    else
+                        continue;
+                }
+                strcat(buff_send, "</CENTER></BODY></HTML>");
+                buff_send[strlen(buff_send)] = '\0';
+
+                closedir(dir);
+            }
+            else
+            {
+                printf("SERVER: Could not open 'img' directory\n\terrno: %d\n", errno);
+                perror("");
+                exit(EXIT_FAILURE);
+            }
+        }
     }
 
     // Sending message
@@ -74,9 +149,6 @@ void* connection_handler(void* socket_descriptor)
         perror("");
         exit(EXIT_FAILURE);
     }
-
-    //Receive a message from client
-    read_size = recv(sock, client_message, MAX_CLIENT_MESSAGE, 0);
 
     memset(buff_send, 0, sizeof(buff_send));
     free(socket_descriptor);
