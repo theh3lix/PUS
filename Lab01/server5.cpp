@@ -12,7 +12,8 @@
 #pragma GCC diagnostic ignored "-Wwrite-strings"
 
 #define MAX_CLIENT_MESSAGE 2000
-#define MAX_BUFFOR_SIZE 240
+#define MAX_BUFFOR_SIZE 512
+
 
 void* connection_handler(void* socket_descriptor)
 {
@@ -27,17 +28,20 @@ void* connection_handler(void* socket_descriptor)
     printf("SERVER: Thread function\n");
 
     // Reading images
-    if ((dir = opendir("/home/qhoros/CLionProjects/server5/img/")) != NULL)
+    if ((dir = opendir("img/")) != NULL)
     {
-        // HTTP Header
-        //strcpy(buff_send, "HTTP/1.1 240 Ok\r\n");
-        //strcat(buff_send, "Content-length:");
-        //strcat(buff_send, "240");
-        //strcat(buff_send, "\r\n");
+        // Header
+        char* blank_response_header =
+                "HTTP/1.0 200 OK\n"
+                        "Content-Type: text/html;charset=UTF-8\n"
+                        "Content-Length:512\n"
+                        "Content-Encoding: UTF-8\n"
+                        "\n";
 
         // Proper message
         memset(buff_send, 0, sizeof(buff_send));
-        strcpy(buff_send, "<HTML>\n\t<BODY>\n\t\t<CENTER>\n");
+        strcpy(buff_send, blank_response_header);
+        strcat(buff_send, "<HTML>\n\t<BODY>\n\t\t<CENTER>\n");
 
         while((ent = readdir(dir)) != NULL)
         {
