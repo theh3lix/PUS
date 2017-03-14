@@ -1,9 +1,5 @@
-/*
- * Data:                2009-02-10
- * Autor:               Jakub Gasior <quebes@mars.iti.pk.edu.pl>
- * Kompilacja:          $ gcc server2.c -o server2
- * Uruchamianie:        $ ./server2 <numer portu>
- */
+//Autor: Witold Karaś
+//na podstawie server2.c
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -17,8 +13,6 @@
 #include "libpalindrome.c"
 
 #include <iostream>
-
-
 
 using namespace std;
 
@@ -74,79 +68,89 @@ int main(int argc, char** argv) {
 
 	while(true)
 	{
-		fprintf(stdout, "Server is listening for incoming connection...\n");
-		
-		
-		client_addr_len = sizeof(client_addr);
+		fprintf(stdout, "\nServer is listening for incoming connection...\n");
 
+		client_addr_len = sizeof(client_addr);
 		int recvfromRetval = recvfrom(sockfd,buff, sizeof(buff),0,(struct sockaddr*)&client_addr, &client_addr_len);
-		
-		
+
 		if(recvfromRetval==-1)
 		{
 			cerr<<"Socket receive error!"<<endl;
 			cerr<<"errno: "<<errno;
 			exit(EXIT_FAILURE);
 		}
-		
+
 		if(recvfromRetval==0)
-		{
-			break;
-		}
-		
+        {
+
+            break;
+        }
 
 		
-		fprintf(stdout, "UDP datagram received from %s:%d. Echoing message...\n", inet_ntop(AF_INET, &client_addr.sin_addr, addr_buff, sizeof(addr_buff)), ntohs(client_addr.sin_port));
-			
-		//czy na pewno wysylany jest \0 ?
-		
+		fprintf(stdout, "\nUDP datagram received from %s:%d. Echoing message...\n", inet_ntop(AF_INET, &client_addr.sin_addr, addr_buff, sizeof(addr_buff)), ntohs(client_addr.sin_port));
+
 		char currentChar;
 		size_t i=0;
-		
-		
+
+        //poniższy kod jest zbędny z racji wykonywania sprawdzania przez funkcję is_palindrome
+        //stosowna uwaga została umieszczona w sprawozdaniu
 		do
 		{
-			//DOPISAC TO DO UWAG DO SPRAWKA - bez sensu 2x sprawdzanie
 			if(!isdigit(buff[i]))
 			{
-				cout<<"String is not na number!";
-				close(sockfd);
-				exit(EXIT_FAILURE);
+				cerr<<" String is not na number! "<<endl;
+                break;
 			}
 			i++;
 		} while(currentChar!='\0');
 
 
+        //w przypadku przesyłania tego typu opisowych komunikatów mieszają się strumienie między terminalami -
+        // - komunikat o palindromie pojawia się w oknie serwera.
+        //zakomentowano dla lepszej czytelności uruchomionych programow
+
+        /*string str;
+        switch(is_palindrome(buff, strlen(buff)))
+        {
+            case 1:
+                str="is palindrome "; //jest palindromem
+                break;
+            case 0:
+                str="isn't palindrome "; //nie jest palindromem
+                break;
+            default:
+                str="isn't number string "; //ciąg nie jest ciągiem liczbowym
+                break;
+        }
+        char*retVal= (char *) str.c_str();
+        cerr<<retVal;*/
+
         char retVal;
         switch(is_palindrome(buff, strlen(buff)))
         {
             case 1:
-                retVal='t';
+                retVal='t'; //jest palindromem
                 break;
             case 0:
-                retVal='n';
+                retVal='n'; //nie jest palindromem
                 break;
             default:
-                retVal='x';
+                retVal='x'; //ciąg nie jest ciągiem liczbowym
                 break;
         }
-		
 
-        //uwagi: blad w kodzie pliku server2.c
-		//sending response back to client
-        //wtf? - zwracane -1 a errno jest 0
+
+        //dziwny błąd?? - zwracane -1, a errno==0 (Success)
 		if(sendto(sockfd,&retVal,sizeof(retVal),0,(struct sockaddr*)&client_addr, client_addr_len)==-1);
 		{
-			cerr<<"Error sending message back. errno: "<<errno<<endl;
+			//cerr<<"Error sending message back. errno: "<<errno<<endl;
             perror("");
-			close(sockfd);
-			exit(EXIT_FAILURE);
+			//close(sockfd);
+			//exit(EXIT_FAILURE);
 		}		
 	}
-	
-	
 
     close(sockfd);
-	cout<<"No message provided. Shutting down...";
+	cerr<<"No message provided. Shutting down...";
     exit(EXIT_SUCCESS);
 }

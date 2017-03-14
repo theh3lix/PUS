@@ -1,9 +1,5 @@
-/*
- * Data:                2009-02-10
- * Autor:               Jakub Gasior <quebes@mars.iti.pk.edu.pl>
- * Kompilacja:          $ gcc client2.c -o client2
- * Uruchamianie:        $ ./client2 <adres IP> <numer portu> <wiadomosc>
- */
+//Autor: Witold Karaś
+//na podstawie client2.c
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -37,7 +33,6 @@ int main(int argc, char** argv) {
         exit(EXIT_FAILURE);
     }
 
-
     /* Utworzenie gniazda dla protokolu UDP: */
     sockfd = socket(PF_INET, SOCK_DGRAM, 0);
     if (sockfd == -1) {
@@ -63,7 +58,6 @@ int main(int argc, char** argv) {
     remote_addr.sin_port = htons(atoi(argv[2])); /* Numer portu. */
     addr_len = sizeof(remote_addr); /* Rozmiar struktury adresowej w bajtach. */
 
-
 		
 	if(connect(sockfd, (sockaddr*)&remote_addr, addr_len)==-1)
     {
@@ -75,41 +69,41 @@ int main(int argc, char** argv) {
 	
 	while(true)
 	{
-		cout<<"Enter message to send"<<endl;
+		cerr<<"Enter message to send"<<endl;
 		
 		char message[256];
-		cin>>message;
-				
-		if(message==nullptr)
-		{
-			break;
-		}
+        //scanf("%s",message);
+		//cin>>message;
+        cin.getline(message, 256);
+
 		
 		if(send(sockfd, message, strlen(message), 0)==-1)
 		{
 			cerr<<"Socket send error!"<<endl;
-			//perror("");
 			cerr<<"errno: "<<errno;
 			exit(EXIT_FAILURE);
 		}
+
+        if(message[0]=='\000')
+        {
+            break;
+        }
 		
 		//waiting for response
 		if (recvfrom(sockfd, buff, sizeof(buff), 0, NULL, NULL) == -1) 
 		{
 			cerr<<"Socket receive error!"<<endl;
-			//perror("");
 			cerr<<"errno: "<<errno;
 			exit(EXIT_FAILURE);
 		}
 
 		//buff[retval] = '\0';
 
-		cout<<"Response from server: "<<buff<<endl;
+		cerr<<"Response from server: "<<buff<<endl;
 	}
-	
 
     close(sockfd);
-	cout<<"No message provided. Shutting down...";
+	cerr<<"No message provided. Shutting down...";
     exit(EXIT_SUCCESS);
 }
 
