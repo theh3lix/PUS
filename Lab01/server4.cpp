@@ -1,129 +1,108 @@
-
+//author: Witold Karaś
+//based on examples from previous exercises and Linux documentation
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/socket.h> /* socket() */
-#include <netinet/in.h> /* struct sockaddr_in */
-#include <arpa/inet.h>  /* inet_ntop() */
-#include <unistd.h>     /* close() */
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <unistd.h>
 #include <string.h>
 #include <errno.h>
 #include <iostream>
-#include <cstdlib>
-#include <vector
+#include <vector>
 #include <algorithm>
+#include <sstream>
 
 using namespace std;
 
-
-std::vector<int>clients(30);
-int listenfd, connfd; /* Deskryptory dla gniazda nasluchujacego i polaczonego: */
-int max_sd;
+std::vector<int>clients;
+int listenSocketDescriptor;
 fd_set readfds;
-struct sockaddr_in client_addr, server_addr;     /* Gniazdowe struktury adresowe (dla klienta i serwera): */
+sockaddr_in server_addr;
 
 void checkForNewConnection()
 {
     int new_socket;
+    sockaddr_in client_addr;
+    socklen_t client_addr_len;
 
-    socklen_t client_addr_len= sizeof(client_addr);
+    //mozna sie pozbyc tego sprawdzania??
+    if (FD_ISSET(listenSocketDescriptor, &readfds)){
 
-    //mozna sie pozbyc tego sprawdzania
-    if (FD_ISSET(listenfd, &readfds)){
-        /* Z pewnoscia to nowe polaczenie, trzeba je dodac */
-        if ((new_socket = accept(listenfd, (struct sockaddr *)&client_addr, (socklen_t*)&client_addr_len)) < 0)
+        if ((new_socket = accept(listenSocketDescriptor, (struct sockaddr *)&client_addr, &client_addr_len)) < 0)
         {
             perror("accept");
             exit(EXIT_FAILURE);
         }
 
-        /* Informacja o nowym polaczeniu */
-        printf("New connection , socket fd is %d , ip is : %s , port : %d. Connected users: %d.\n", new_socket, inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port),clients.size()); //size()-+1 bo od 0 ale +1 bo socket serwera
+        cout<<"New <client "<<new_socket<<"> connected! IP: "<<inet_ntoa(client_addr.sin_addr)<<" port: "<<ntohs(client_addr.sin_port)<<endl;
 
-        char* message="Welcome to chat project\n";
-        /* Wysylamy wiadomosc powitalna */
-        if (send(new_socket, message, strlen(message), 0) != strlen(message)){
-            perror("send");
+        const char *message="Welcome to chat project\n";
+        if (send(new_socket, message, strlen(message), 0) != strlen(message))
+        {
+            cerr<<"send() error! errno: "<<errno<<endl;
+            exit(EXIT_FAILURE);
         }
 
-        /* Potwierdzamy na konsli wyslanie wiadomosci */
-        puts("Welcome message sent successfully");
-
-        /* Dodajemy polaczenie do tablicy */
         clients.push_back(new_socket);
+        cout<<"Total clients: "<<clients.size()<<endl;
     }
 }
 
 void checkConnectedClients()
 {
-    /* Sprawdzamy inne sockety */
-    for (i = 0; i < 30; i++){
-        sd = clients[i];
-        /* Jesli na danym sockecie przyszla wiadomosc */
-        if (FD_ISSET(sd, &readfds))	{
-            /* Jesli byla to informacja o zamknieciu polaczenia */
-            if ((valread = read(sd, buff, sizeof(buff))) == 0){
-                /* Host sie odlaczyl, wypisujemy informacje */
-                getpeername(sd, (struct sockaddr*)&client_addr, (socklen_t*)&client_addr_len);
-                printf("Host disconnected , ip %s , port %d \n", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
+    sockaddr_in client_addr;
+    memset(&client_addr, 0, sizeof(client_addr));
+    socklen_t client_addr_len;
+    char messageBuffer[256];
 
-                /* Zamykamy socket i usuwamy klienta z tablicy oraz zmniejszamy licznik podlaczanych klientow */
-                close(sd);
-                clients[i] = 0;
-                clients_num--;
+    for(auto element : clients)
+    {
+        //sprawdzic to!!!! czy to sprawdza czy tylko jest w zbiorze socketow czy sprawdza czy jest tez teraz dostępny!!!!
+        if(FD_ISSET(element,&readfds))
+        {
+            if(read(element, messageBuffer, sizeof(messageBuffer))==0) //host sie odlaczyl
+            {
+                getpeername(element, (struct sockaddr*)&client_addr, &client_addr_len);
+                cout<<"<client "<<element<<"> disconnected! IP: "<<inet_ntoa(client_addr.sin_addr)<<" port: "<<ntohs(client_addr.sin_port)<<endl;
+
+                close(element);
+                FD_CLR(element, &readfds);
+                clients.erase(std::find(clients.begin(),clients.end(), element));
             }
-                /* Jesli uzytkownik sie nie odlaczyl, napisal wiadomosc */
-            else{
-                /* Wypisujemy informacje na serwerze */
-                printf("Got message: %s from socket %d\n", buff, sd);
-                /* Konczymy string znakiem NULL */
-                buff[valread] = '\0';
-                char str[15];
-                /* Wyposazamy wiadomosc w informacje o tym, kto ja przeslal */
-                sprintf(str, "%d", sd);
-                strcat(str, ": ");
-                strcat(str, buff);
-                int j;
-                /* I przesylamy do innych klientow (wykluczamy klienta, ktory przeslal wiadomosc) */
-                for (j = 0; j < 30; j++)
-                    if(clients[j]!=sd && clients[j]!=0)
-                        send(clients[j], str, strlen(str), 0);
+            else
+            {
+                cout<<"Message received from socket: "<<element<<" Content:"<<endl<<messageBuffer<<endl;
+
+                //preparing and sending message to other clients
+                std::stringstream message;
+                message<<"<client "<<element<<">: "<<messageBuffer;
+
+                for(auto el : clients)
+                {
+                    if(el!=element)
+                        send(el, message.str().c_str(), message.str().length(),0);
+                }
             }
         }
     }
-
-
-
 }
 
 
+int main(int argc, char* argv[])
+{
+    int maxSocketDescriptor;
 
-int main(int argc, char** argv) {
-
-
-    int  retval; /* Wartosc zwracana przez funkcje. */
-
-    socklen_t server_addr_len;
-
-
-    int sd, valread;
-
-
-
-    char buff[256];     /* Bufor wykorzystywany przez write() i read(): */
-    char addr_buff[256]; /* Bufor dla adresu IP klienta w postaci kropkowo-dziesietnej: */
-
-
-
-    if (argc != 2) {
+    if (argc != 2)
+    {
         fprintf(stderr, "Invocation: %s <PORT>\n", argv[0]);
         exit(EXIT_FAILURE);
     }
 
-    /* Utworzenie gniazda dla protokolu TCP: */
-    listenfd = socket(PF_INET, SOCK_STREAM, 0);
-    if (listenfd == -1) {
-        perror("socket()");
+    if ((listenSocketDescriptor = socket(PF_INET, SOCK_STREAM, 0)) == -1)
+    {
+        cerr<<"listen socket creating error! errno: "<<errno<<endl;
         exit(EXIT_FAILURE);
     }
 
@@ -131,37 +110,28 @@ int main(int argc, char** argv) {
     server_addr.sin_family          =       AF_INET;
     server_addr.sin_addr.s_addr     =       htonl(INADDR_ANY);
     server_addr.sin_port            =       htons(atoi(argv[1]));
-    server_addr_len                 =       sizeof(server_addr);
 
 
-
-
-
-    if (bind(listenfd, (struct sockaddr*) &server_addr, server_addr_len) == -1)
+    if (bind(listenSocketDescriptor, (struct sockaddr*) &server_addr, sizeof(server_addr)) == -1)
     {
-        perror("bind()");
+        cerr<<"bind() error! errno: "<<errno<<endl;
         exit(EXIT_FAILURE);
     }
 
-    if (listen(listenfd, 2) == -1)
+    if (listen(listenSocketDescriptor, 10) == -1)
     {
-        perror("listen()");
+        cerr<<"listen() error! errno: "<<errno<<endl;
         exit(EXIT_FAILURE);
     }
-
-
-    fprintf(stdout, "Server is listening for incoming connection...\n");
-
-
-
+    cout<<"Listening for connections..."<<endl;
 
 
     while(true)
     {
-        FD_ZERO(&readfds); 	/*  Wyzerowanie struktury przechowujacej sockety (tymczasowo) */
-        FD_SET(listenfd, &readfds); /* Dodanie glownego socketu do struktury */
-        max_sd = listenfd; 	/* Chwilowo maksymalnym identyfikatorem jest jedyny umieszczony w strukturze */
-
+        //todo: moze to wyrzucic poza petle
+        FD_ZERO(&readfds);
+        FD_SET(listenSocketDescriptor, &readfds);
+        maxSocketDescriptor = listenSocketDescriptor;
 
         for(auto element : clients)
         {
@@ -171,19 +141,20 @@ int main(int argc, char** argv) {
             {
                 /*Dodajemy go do struktury i doliczamy, jesli identyfikator jego socketa jest najwyzszy */
                 FD_SET(element, &readfds);
-                if (element > max_sd)
-                    max_sd = element;
+                if (element > maxSocketDescriptor)
+                    maxSocketDescriptor = element;
             }
         }
 
-        int retVal = select(max_sd + 1, &readfds, NULL, NULL, NULL);
 
-        if ((retVal < 0) && (errno != EINTR))	{
-            printf("select error");
+        //todo: przerobić to!!! chyba zle dzialac beda te funkcje
+        if(select(maxSocketDescriptor + 1, &readfds, NULL, NULL, NULL)<0 && errno!=EINTR)
+        {
+            cerr<<"select() error! errno: "<<errno<<endl;
+            exit(EXIT_FAILURE);
         }
 
         checkForNewConnection();
         checkConnectedClients();
-
     }
 }
