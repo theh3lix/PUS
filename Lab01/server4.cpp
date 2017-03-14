@@ -18,7 +18,7 @@ using namespace std;
 
 std::vector<int>clients;
 int listenSocketDescriptor;
-fd_set readfds;
+fd_set watchedSockets;
 sockaddr_in server_addr;
 
 void checkForNewConnection()
@@ -27,8 +27,9 @@ void checkForNewConnection()
     sockaddr_in client_addr;
     socklen_t client_addr_len;
 
-    //mozna sie pozbyc tego sprawdzania??
-    if (FD_ISSET(listenSocketDescriptor, &readfds)){
+    memset(&client_addr,0,sizeof(client_addr));
+
+    if (FD_ISSET(listenSocketDescriptor, &watchedSockets)){
 
         if ((new_socket = accept(listenSocketDescriptor, (struct sockaddr *)&client_addr, &client_addr_len)) < 0)
         {
@@ -56,11 +57,11 @@ void checkConnectedClients()
     memset(&client_addr, 0, sizeof(client_addr));
     socklen_t client_addr_len;
     char messageBuffer[256];
+    memset(messageBuffer,0, sizeof(messageBuffer));
 
     for(auto element : clients)
     {
-        //sprawdzic to!!!! czy to sprawdza czy tylko jest w zbiorze socketow czy sprawdza czy jest tez teraz dostępny!!!!
-        if(FD_ISSET(element,&readfds))
+        if(FD_ISSET(element,&watchedSockets)) //sprawdza czy dany klient jest teraz gotowy (dane uzyskane przez select)
         {
             if(read(element, messageBuffer, sizeof(messageBuffer))==0) //host sie odlaczyl
             {
@@ -68,12 +69,12 @@ void checkConnectedClients()
                 cout<<"<client "<<element<<"> disconnected! IP: "<<inet_ntoa(client_addr.sin_addr)<<" port: "<<ntohs(client_addr.sin_port)<<endl;
 
                 close(element);
-                FD_CLR(element, &readfds);
+                FD_CLR(element, &watchedSockets);
                 clients.erase(std::find(clients.begin(),clients.end(), element));
             }
             else
             {
-                cout<<"Message received from socket: "<<element<<" Content:"<<endl<<messageBuffer<<endl;
+                cout<<"Message received from socket: "<<element<<" Content:    "<<messageBuffer;
 
                 //preparing and sending message to other clients
                 std::stringstream message;
@@ -126,29 +127,21 @@ int main(int argc, char* argv[])
     cout<<"Listening for connections..."<<endl;
 
 
+
     while(true)
     {
-        //todo: moze to wyrzucic poza petle
-        FD_ZERO(&readfds);
-        FD_SET(listenSocketDescriptor, &readfds);
+        FD_ZERO(&watchedSockets);
+        FD_SET(listenSocketDescriptor, &watchedSockets);
         maxSocketDescriptor = listenSocketDescriptor;
 
         for(auto element : clients)
         {
-            //to tez chyba(czy na pewno?) mozna usunac tego ifa
-            /* Jesli jest podlaczony klient */
-            if(element>0)
-            {
-                /*Dodajemy go do struktury i doliczamy, jesli identyfikator jego socketa jest najwyzszy */
-                FD_SET(element, &readfds);
-                if (element > maxSocketDescriptor)
-                    maxSocketDescriptor = element;
-            }
+            FD_SET(element, &watchedSockets);
+            if (element > maxSocketDescriptor)
+                maxSocketDescriptor = element;
         }
 
-
-        //todo: przerobić to!!! chyba zle dzialac beda te funkcje
-        if(select(maxSocketDescriptor + 1, &readfds, NULL, NULL, NULL)<0 && errno!=EINTR)
+        if(select(maxSocketDescriptor + 1, &watchedSockets, NULL, NULL, NULL)<0 && errno!=EINTR)
         {
             cerr<<"select() error! errno: "<<errno<<endl;
             exit(EXIT_FAILURE);
