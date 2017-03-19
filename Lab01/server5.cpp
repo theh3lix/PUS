@@ -12,7 +12,7 @@
 #pragma GCC diagnostic ignored "-Wwrite-strings"
 
 #define MAX_CLIENT_MESSAGE 2000
-#define MAX_BUFFOR_SIZE 2048
+#define MAX_BUFFOR_SIZE 512
 
 
 void* connection_handler(void* socket_descriptor)
@@ -62,7 +62,7 @@ void* connection_handler(void* socket_descriptor)
                 char *blank_response_header =
                         "HTTP/1.0 200 OK\n"
                                 "Content-Type: image\n"
-                                "Content-Length:2048\n"
+                                "Content-Length:512\n"
                                 "\n";
 
                 // Proper message
@@ -104,7 +104,7 @@ void* connection_handler(void* socket_descriptor)
                 char *blank_response_header =
                         "HTTP/1.0 200 OK\n"
                                 "Content-Type: image\n"
-                                "Content-Length:2048\n"
+                                "Content-Length:512\n"
                                 "\n";
 
                 // Proper message
