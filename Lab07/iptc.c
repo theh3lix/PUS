@@ -1,9 +1,13 @@
 /*
  * Data:                2009-04-15
  * Autor:               Jakub Gasior <quebes@mars.iti.pk.edu.pl>
- * Kompilacja:          $ gcc iptc.c -o iptc -liptc
+ * Kompilacja:          $ gcc iptc.c -o iptc -lip4tc
  * Uruchamianie:        $ ./iptc -h
  */
+ 
+ //korekta: Witold Karaś 2017-05-10
+ //wymaga pakietu iptables-dev (Ubuntu) / iptables-devel(Fedora)
+ 
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -13,7 +17,6 @@
 #include <net/if.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#include <iptables.h>
 #include <libiptc/libiptc.h>
 
 /* Zdefiniowane operacje: */
