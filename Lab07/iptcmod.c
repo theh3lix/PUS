@@ -474,12 +474,12 @@ int main(int argc, char **argv) {
 	else if (r->operation == POLICY_ACCEPT)
 	{
 		//ustawienie domyślnej polityki accept dla łańcucha
-		set_accept(h, r);
+		policy_accept(h, r);
 	}
 	else if (r->operation == POLICY_DROP)
 	{
 		//ustawienie domyślnej polityki drop dla łańcucha
-		set_drop(h, r);
+		policy_drop(h, r);
 	}
 
     /* Zwolnienie pamieci zaalokowanej dla reguly w funkcji parse(): */
