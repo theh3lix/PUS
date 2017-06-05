@@ -1,3 +1,5 @@
+//Witold Karaś
+//na podstawie sftp.c i libssh2.org
 /*
  * Data:                2009-06-25
  * Autor:               Jakub Gasior <quebes@mars.iti.pk.edu.pl>
@@ -14,7 +16,10 @@
 #include <errno.h>
 #include <libssh2.h>
 #include <libssh2_sftp.h>
+#include <string.h>
 #include "libcommon.h"
+#include <fcntl.h>
+
 
 #define PASS_LEN 128
 #define BUF_SIZE 1024
@@ -143,6 +148,60 @@ int main(int argc, char **argv) {
         print_sftp_error(session, sftp, "libssh2_sftp_closedir()");
         exit(EXIT_FAILURE);
     }
+
+    //--------------------------------------------------
+    int sftp_handle=0;
+
+    char* totalPathToFile=(char*)malloc(2048);
+    memset(totalPathToFile,0,sizeof(totalPathToFile));
+
+    while(!sftp_handle)
+    {
+        fprintf(stdout,"Enter file name you want to download.\n");
+        scanf("%s",filename);
+        strncpy(totalPathToFile,dir, sizeof(dir));
+        strncat(totalPathToFile,"/", 1);
+        strncat(totalPathToFile,filename, sizeof(filename));
+        //strcpy(totalPathToFile,"/home/qwerty/deamon.c");
+
+        //fprintf(stdout,"filename:%s\n",filename);
+        fprintf(stdout,"path to file: %s\n", totalPathToFile);
+
+        /* Request a file via SFTP */
+        sftp_handle = libssh2_sftp_open(sftp, totalPathToFile, LIBSSH2_FXF_READ, 0);
+
+        if (!sftp_handle)
+        {
+            print_sftp_error(session, sftp, "libssh2_sftp_open()");
+            exit(EXIT_FAILURE);
+        }
+    }
+    fprintf(stderr, "libssh2_sftp_open() is done, now receive data!\n");
+
+    FILE* file = open(filename, O_TRUNC|O_WRONLY|O_CREAT, S_IWRITE | S_IREAD);
+
+    int rc;
+    do
+    {
+        char mem[1024];
+
+        rc = libssh2_sftp_read(sftp_handle, mem, sizeof(mem));
+
+        if (rc > 0)
+        {
+            write(file, mem, rc);
+        }
+        else
+        {
+            break;
+        }
+    } while (1);
+
+    if(!close(file))
+        fprintf(stdout, "File succesfully closed!\n");
+
+    //--------------------------------------------------
+
 
     /* Zamkniecie polaczenia SFTP. */
     err = libssh2_sftp_shutdown(sftp);
